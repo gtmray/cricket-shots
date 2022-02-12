@@ -1,11 +1,13 @@
-import numpy as np
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
+import numpy as np
 from tflite_model_maker.config import ExportFormat, QuantizationConfig
 from tflite_model_maker import model_spec
 from tflite_model_maker import object_detector
 from tflite_support import metadata
 import tensorflow as tf
+import sys
 import platform
 from typing import List, NamedTuple
 import json
@@ -14,9 +16,6 @@ from PIL import Image
 
 Interpreter = tf.lite.Interpreter
 load_delegate = tf.lite.experimental.load_delegate
-
-# pylint: enable=g-import-not-at-top
-
 
 class ObjectDetectorOptions(NamedTuple):
   """A config to initialize an object detector."""
@@ -317,6 +316,8 @@ FILE = str(sys.argv[2])
 # image.thumbnail((512, 512), Image.ANTIALIAS)
 # image_np = np.asarray(image)
 image_np = cv2.imread(FILE)
+image_np = cv2.resize(image_np, (512, 512))
+image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
 
 # Load the TFLite model
 options = ObjectDetectorOptions(
@@ -330,7 +331,10 @@ detections = detector.detect(image_np)
 print(detections)
 # Draw keypoints and edges on input image
 image_np = visualize(image_np, detections)
-
-# Show the detection result
-Image.fromarray(image_np)
-
+image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+while True:    
+    cv2.imshow("Bat Detection", image_np)
+    k = cv2.waitKey(1) & 0xff
+    if k == 27:  # If backspace break
+        break
+cv2.destroyAllWindows()
