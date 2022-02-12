@@ -1,0 +1,7 @@
+Bat Detection:
+
+py predict_bat.py model/bat_100.tflite images/Cover.JPG
+
+Shots Classification:
+
+py predict_shot.py model/shot_classification.pkl images/smith.JPG
