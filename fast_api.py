@@ -12,7 +12,6 @@ import re
 import sys
 import cv2
 import matplotlib.pyplot as plt
-from PIL import Image
 
 from tflite_model_maker.config import ExportFormat, QuantizationConfig
 from tflite_model_maker import model_spec
