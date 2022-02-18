@@ -9,6 +9,7 @@ import re
 import sys
 import cv2
 import matplotlib.pyplot as plt
+from PIL import Image
 
 from tflite_model_maker.config import ExportFormat, QuantizationConfig
 from tflite_model_maker import model_spec
@@ -19,6 +20,7 @@ import tensorflow as tf
 from typing import List, NamedTuple
 import json
 import cv2
+import imutils
 
 from warnings import filterwarnings
 filterwarnings('ignore')
@@ -27,8 +29,8 @@ filterwarnings('ignore')
 Interpreter = tf.lite.Interpreter
 
 
-classes_list = ['0. Cut Shot', '1. Cover Drive', '2. Straight Drive',
-                '3. Pull Shot', '4. Leg Glance Shot', '5. Scoop Shot']
+classes_list = ['0.Cut Shot', '1.Cover Drive', '2.Straight Drive',
+                '3.Pull Shot', '4.Leg Glance Shot', '5.Scoop Shot']
 
 idx_features = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 53, 55, 56, 57, 58,
                 59, 61, 63, 65, 66, 67, 68, 69, 73, 74, 75, 77, 81, 82, 83, 85, 89, 90, 91, 92, 94, 96, 98, 103, 104, 106, 107, 112, 115, 119, 120, 128]
@@ -61,7 +63,7 @@ def predict_shot(imgRGB):
     result = int(model.predict([data])[0])
     
     # Remove the text class number
-    text = f"Prediction:{re.sub('[^a-zA-Z]', ' ', classes_list[result])}"
+    text = f"{re.sub('[^a-zA-Z]', ' ', classes_list[result])}"
     return text, imgRGB
 
 class ObjectDetectorOptions(NamedTuple):
@@ -324,36 +326,165 @@ def visualize(image: np.ndarray, detections: List[Detection]) -> np.ndarray:
 
     return image
 
-# Using image
+def bat_detection(TFLITE_MODEL_PATH, IMG):
+    DETECTION_THRESHOLD = 0.5
+    image_np = IMG
+    # Load the TFLite model
+    options = ObjectDetectorOptions(
+        num_threads=4,
+        score_threshold=DETECTION_THRESHOLD,
+    )
+    detector = ObjectDetector(model_path=TFLITE_MODEL_PATH, options=options)
+
+    # Run object detection estimation using the model.
+    detections = detector.detect(image_np)
+    # Draw keypoints and edges on input image
+    image_np = visualize(image_np, detections)
+    # plt.figure(figsize=(5, 5))
+    # plt.grid(False)
+    # plt.axis(False)
+    # plt.imshow(image_np)
+    return detections, image_np
+
+def findCircle(img):
+    circles = cv2.HoughCircles(img, 
+                               cv2.HOUGH_GRADIENT,
+                               1.2, 50,
+                               param1=100,
+                               param2=30,
+                               minRadius=1,
+                               maxRadius=20
+                              )
+
+    if circles is not None:
+        # convert the (x, y) coordinates and radius of the circles to integers
+        circlesRound = np.round(circles[0, :]).astype("int")
+        # loop over the (x, y) coordinates and radius of the circles
+        for (x, y, r) in circlesRound:
+            cv2.circle(img, (x, y), r, (0, 255, 0), 4)
+        return circlesRound
+
+# Function for array in a range with respect to variable (ex: h-1, h, h+1 when thres=1)
+def random_trial(var, thres):
+    list_val = []
+    for i in np.arange(-thres, thres, 0.1):
+        list_val.append(var+i)
+    return np.array(list_val)
+
+def shots_efficiency(det, img_path, img_shape):
+    x_axis = []
+    y_axis = []
+
+    # ROI co-ordinates of bat
+    p1 = (det[0][0][0], det[0][0][1])
+    p2 = (det[0][0][2], det[0][0][3])
+
+    def resize_times(img, times):
+        img = cv2.resize(img, (img.shape[1]*times, img.shape[0]*times))
+        return img
+
+    def nothing(x):
+        # Do nothing when no changes
+        pass
+
+    # cv2.namedWindow("Adjusting value", cv2.WINDOW_NORMAL)
+    # cv2.resizeWindow("Adjusting value", (400, 400))
+    # cv2.createTrackbar("Threshold1", "Adjusting value", 0, 255, nothing)
+    # cv2.createTrackbar("Threshold2", "Adjusting value", 0, 255, nothing)
+
+    # while True:
+
+    img = cv2.imread(img_path)
+    img = cv2.resize(img, (img_shape[1], img_shape[0]))
+
+    img_copy = img.copy()
+    roi = img_copy[p1[1]:p2[1], p1[0]:p2[0]]
+    roi_out = img_copy[p1[1]:p2[1], p1[0]:p2[0]]
+
+    # th1 = cv2.getTrackbarPos("Threshold1", "Adjusting value")
+    # th2 = cv2.getTrackbarPos("Threshold2", "Adjusting value")
+
+    blurred = cv2.GaussianBlur(roi, (5, 5), 0)
+    #     edges = cv2.Canny(blurred, th1, th2)
+    edges = cv2.Canny(blurred, 50, 156)
+    #     edges = cv2.Canny(blurred, 50, 200)
+
+    kernel = np.ones((5, 5), np.uint8)
+    edges_dilate = cv2.dilate(edges, kernel, iterations=1)
+
+    contours_img = roi.copy()
+    cnts = cv2.findContours(
+        edges_dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnts = imutils.grab_contours(cnts)
+    areas = [cv2.contourArea(c) for c in cnts]
+    max_index = np.argmax(areas)
+    cnt = cnts[max_index]
+    cv2.drawContours(contours_img, [cnt], -1, (240, 0, 159), 1)
+
+    # For Ball
+    for i in cnt:
+        x_axis.append(i[0][0])
+        y_axis.append(i[0][1])
+    midpoint = (((min(x_axis)+max(x_axis))//2), ((min(y_axis)+max(y_axis))//2))
+    cv2.circle(contours_img, midpoint, 10, (0, 0, 255), 1)
+    circlesRound = findCircle(edges)  # Center = (x, y), radius = r
+
+    try:
+        h = int(np.median(circlesRound[:, 0]))
+        k = int(np.median(circlesRound[:, 1]))
+        r = int(np.median(circlesRound[:, 2]))
+        cv2.circle(contours_img, (h, k), r, (0, 255, 0), 1)
+
+        dist = np.sqrt((h-midpoint[0])**2+(k-midpoint[1])**2)
+        if h>min(x_axis) and h<max(x_axis) and k>min(y_axis) and k<max(y_axis):
+    
+            if dist < 50:
+                output = "Perfect"
+            else:
+                output = "Edged"
+    except Exception as e:
+        output = "Missed"
+
+    rs_by = 2
+    edges_dilate = resize_times(edges_dilate, rs_by)
+
+    return edges_dilate, output
 
 
-DETECTION_THRESHOLD = 0.5
-IMG_PATH = 'images\Cut Bhurtel.JPG'
-TFLITE_MODEL_PATH = 'model/bat_100.tflite'
+img_path = 'images/testing/Passed/bhurtel3.jpg'
+model_path = 'model/bat_100.tflite'
 
-image_np = cv2.imread(IMG_PATH)
+image_np = cv2.imread(img_path)
 image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
+try:
+    text_shot, imgRGB = predict_shot(image_np)
+except:
+    text_shot = "Unknown"
 
-text, imgRGB = predict_shot(image_np)
+# Bat
+image = Image.open(img_path).convert('RGB')
+image.thumbnail((512, 512), Image.ANTIALIAS)
+image_bat = np.asarray(image)
+plt.imshow(image_bat)
+try:
+    det, img = bat_detection(model_path, image_bat)
+    img_shape = img.shape
+    img_edge, text_eff = shots_efficiency(det, img_path, img_shape)
+except:
+    text_eff = "Unknown"
 
-# Load the TFLite model
-options = ObjectDetectorOptions(
-    num_threads=4,
-    score_threshold=DETECTION_THRESHOLD,
-)
-detector = ObjectDetector(model_path=TFLITE_MODEL_PATH, options=options)
+# while True:
+#     cv2.imshow("Image", img)
+#     k = cv2.waitKey(1) & 0xff
+#     if k == 27:  # If backspace break
+#         break
+# cv2.destroyAllWindows()
 
-# Run object detection estimation using the model.
-detections = detector.detect(image_np)
-print(detections)
-# Draw keypoints and edges on input image
-
-image_np = visualize(imgRGB, detections)
-
+text = f"Shot:{text_shot}, Efficiency: {text_eff}"
+print(text)
 plt.figure(figsize=(10, 10))
 plt.text(0, -5, text, size='xx-large', weight=500)
-plt.imshow(image_np)
+plt.imshow(img)
 plt.grid(False)
 plt.axis(False)
 plt.show()
-

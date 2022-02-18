@@ -405,7 +405,8 @@ def shots_efficiency(det, img_path, img_shape):
         cv2.circle(contours_img, (h, k), r, (0, 255, 0), 1)
 
         dist = np.sqrt((h-midpoint[0])**2+(k-midpoint[1])**2)
-        if h > min(x_axis_new) and h < max(x_axis_new) and k > min(y_axis_new) and k < max(y_axis_new):
+        if h>min(x_axis) and h<max(x_axis) and k>min(y_axis) and k<max(y_axis):
+    
             if dist < 50:
                 output = "Perfect"
             else:
