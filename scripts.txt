@@ -9,10 +9,11 @@ Install dependencies:
 pip install -r requirements.txt
 
 Bat Detection:
-py predict_bat.py images/Cover.JPG
+faspy predict_bat.py images/Cover.JPG
 
 Shots Classification:
 py predict_shot.py model/shot_classification.pkl images/smith.JPG
 
 API:
 uvicorn fast_api:app
+or py -m uvicorn fast_api:app
