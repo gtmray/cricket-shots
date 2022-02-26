@@ -2,6 +2,7 @@ from fastapi import FastAPI, File, UploadFile
 from io import BytesIO
 from PIL import Image
 import os
+from uuid import uuid4
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import pandas as pd
@@ -486,10 +487,11 @@ async def upload_file(file: UploadFile):
     
     return {"PredictedShot": result_shot, "Efficiency": result_eff}
 
-# @app.get("/shotname", tags=["shots"])
-# def get_name():
-#     return {"Shots": [{
-#         "0": "Cut Shot"}, {"1": "Cover Drive"}, {"2": "Straight Drive"}, {"3": "Scoop Shot"}, {"4": "Leg Glance Shot"}, {"6": "5ull Shot"}]}
+@app.get("/uuid",tags=["Token generate"])
+def get_token():
+     return {
+        "token":str(uuid4())
+     }
 
 if __name__ == "__main__":
-    uvicorn.run(app, debug=True)
+    uvicorn.run(debug=True)
