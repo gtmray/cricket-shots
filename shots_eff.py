@@ -35,7 +35,7 @@ classes_list = ['0.Cut Shot', '1.Cover Drive', '2.Straight Drive',
 idx_features = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 53, 55, 56, 57, 58,
                 59, 61, 63, 65, 66, 67, 68, 69, 73, 74, 75, 77, 81, 82, 83, 85, 89, 90, 91, 92, 94, 96, 98, 103, 104, 106, 107, 112, 115, 119, 120, 128]
 
-pkl_filename = 'model\shot_classification.pkl'
+pkl_filename = 'model/shot_classification.pkl'
 with open(pkl_filename, 'rb') as file:
     model = pickle.load(file)
 
@@ -451,7 +451,7 @@ def shots_efficiency(det, img_path, img_shape):
     return edges_dilate, output
 
 
-img_path = 'images/testing/Passed/bhurtel3.jpg'
+img_path = 'images/testing/Passed/test5_e3.jpg'
 model_path = 'model/bat_100.tflite'
 
 image_np = cv2.imread(img_path)
