@@ -3,3 +3,5 @@ Cricket :cricket_game: is often described as a contest between bat and ball, and
 
 # Output
 ![Output](scoop.JPG)
+
+<div style="text-align:center"><img src="scoop.JPG" /></div>.
