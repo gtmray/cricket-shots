@@ -451,7 +451,8 @@ def shots_efficiency(det, img_path, img_shape):
     return edges_dilate, output
 
 
-img_path = 'images/testing/Passed/test5_e3.jpg'
+# img_path = 'images/bishwa.png'
+img_path = str(sys.argv[1])
 model_path = 'model/bat_100.tflite'
 
 image_np = cv2.imread(img_path)
