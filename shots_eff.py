@@ -466,7 +466,7 @@ except:
 image = Image.open(img_path).convert('RGB')
 image.thumbnail((512, 512), Image.ANTIALIAS)
 image_bat = np.asarray(image)
-plt.imshow(image_bat)
+# plt.imshow(image_bat)
 try:
     det, img = bat_detection(model_path, image_bat)
     img_shape = img.shape
