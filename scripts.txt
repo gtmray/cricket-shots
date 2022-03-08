@@ -19,4 +19,4 @@ uvicorn fast_api:app
 or py -m uvicorn fast_api:app
 
 Predict shots and efficiency:
-py shots_eff.py images/bishwa.png
+py shots_eff.py images/demo/bhurtel3.jpg
