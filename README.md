@@ -28,6 +28,7 @@ Cricket :cricket_game: is often described as a contest between bat and ball, and
 
 # Output
 
-<div style="text-align:center"><img src="scoop.JPG" /></div>.
+<div style="text-align:center"><img src="scoop.JPG" /></div>
+# Mobile Application Demo
 <div style="text-align:center"><img src="demo.gif" /></div>
 
