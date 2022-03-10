@@ -111,17 +111,6 @@ class ObjectDetector:
         interpreter.allocate_tensors()
         input_detail = interpreter.get_input_details()[0]
 
-        # From TensorFlow 2.6, the order of the outputs become undefined.
-        # Therefore we need to sort the tensor indices of TFLite outputs and to know
-        # exactly the meaning of each output tensor. For example, if
-        # output indices are [601, 599, 598, 600], tensor names and indices aligned
-        # are:
-        #     - location: 598
-        #     - category: 599
-        #     - score: 600
-        #     - detection_count: 601
-        # because of the op's ports of TFLITE_DETECTION_POST_PROCESS
-        # (https://github.com/tensorflow/tensorflow/blob/a4fe268ea084e7d323133ed7b986e0ae259a2bc7/tensorflow/lite/kernels/detection_postprocess.cc#L47-L50).
         sorted_output_indices = sorted(
             [output['index'] for output in interpreter.get_output_details()])
         self._output_indices = {
